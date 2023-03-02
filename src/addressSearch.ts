@@ -14,5 +14,13 @@ import fetch from 'node-fetch';
  * @returns
  */
 export async function addressSearch(text: string, size: number = 1): Promise<AddressSearchResponse> {
-    throw new Error('Not implemented');
+    let encoded = encodeURIComponent(text);
+    let res = await fetch(`https://api.digitransit.fi/geocoding/v1/search?text=${encoded}&size=${size}`);
+
+    if (!res.ok) {
+        throw new Error(JSON.stringify(res));
+    }
+
+    let data = await res.json();
+    return data as AddressSearchResponse;
 }
