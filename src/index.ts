@@ -1,7 +1,6 @@
-import { addressSearch } from './addressSearch';
+import { findPlace } from './addressSearch';
 import { planRoute } from './itineraryPlanner';
-import { Itinerary, Mode, Place } from './types/RoutingApi';
-import { Feature } from './types/GeocodingApi';
+import { Itinerary, Leg, Mode, Place } from './types/RoutingApi';
 
 const icons: Record<Mode, string> = {
     WALK: '🚶‍',
@@ -29,8 +28,7 @@ async function main() {
     const from = process.argv[2];
     const to = process.argv[3];
 
-    const origin = await getBestMatchingAddress(from);
-    const destination = await getBestMatchingAddress(to);
+    const [origin, destination] = await Promise.all([findPlace(from), findPlace(to)]);
 
     if (!origin) {
         console.error(`Could not locate ${from}`);
@@ -42,10 +40,10 @@ async function main() {
         return;
     }
 
-    console.log(`From: ${origin.properties.label}`);
-    console.log(`To:   ${destination.properties.label}`);
+    console.log(`From: ${origin.name}`);
+    console.log(`To:   ${destination.name}`);
 
-    const route = await planRoute(asPlace(origin), asPlace(destination));
+    const route = await planRoute(origin, destination);
 
     if (route.itineraries.length > 0) {
         for (let itinerary of route.itineraries) {
@@ -59,16 +57,6 @@ async function main() {
     }
 }
 
-async function getBestMatchingAddress(search: string): Promise<Feature | undefined> {
-    const response = await addressSearch(search);
-    return response.features.at(0);
-}
-
-function asPlace(feature: Feature): Place {
-    const [lon, lat] = feature.geometry.coordinates;
-    return { lon, lat };
-}
-
 function printItinerary(itinerary: Itinerary) {
     const tripStart = new Date(itinerary.startTime);
     const tripEnd = new Date(itinerary.endTime);
@@ -76,23 +64,28 @@ function printItinerary(itinerary: Itinerary) {
     console.log(`\n### ${formatTripTime(tripStart, tripEnd)} ###\n`);
 
     for (let leg of itinerary.legs) {
-        const legStart = new Date(leg.startTime);
-        const legEnd = new Date(leg.endTime);
-        const icon = icons[leg.mode];
-        const routeName = leg.route?.shortName ?? '';
-
-        console.log(`${icon} ${routeName} ${leg.from.name} -> ${leg.to.name}`);
-        console.log(formatTripTime(legStart, legEnd), '\n');
+        printLeg(leg);
     }
+}
+
+function printLeg(leg: Leg) {
+    const legStart = new Date(leg.startTime);
+    const legEnd = new Date(leg.endTime);
+    const icon = icons[leg.mode];
+    const routeName = leg.route?.shortName ?? '';
+
+    console.log(`${icon} ${routeName} ${leg.from.name} -> ${leg.to.name}`);
+    console.log(formatTripTime(legStart, legEnd), '\n');
 }
 
 function formatTripTime(start: Date, end: Date): string {
     const time1 = start.toLocaleTimeString();
     const time2 = end.toLocaleTimeString();
-    const diffInMs = Math.round(end.getTime() - start.getTime());
 
-    const diffInMinutes = Math.round(diffInMs / 60_000); // 1 minute = 60 000 milliseconds
-    return `${time1} - ${time2}, ${diffInMinutes} minutes`;
+    const diffSeconds = (end.getTime() - start.getTime()) / 1_000;
+    const diffMinutes = Math.round(diffSeconds / 60);
+    return `${time1} - ${time2}, ${diffMinutes} minutes`;
 }
 
 main();
+

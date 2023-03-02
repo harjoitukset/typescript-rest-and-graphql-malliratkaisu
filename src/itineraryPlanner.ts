@@ -38,8 +38,12 @@ export async function planRoute(from: Place, to: Place, count: number = 3): Prom
             }
         }
     }`;
+
     let response = await fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
-        headers: { 'Content-Type': 'application/graphql' },
+        headers: {
+            'Content-Type': 'application/graphql',
+            'digitransit-subscription-key': process.env['DIGITRANSIT_API_KEY']!
+        },
         method: 'POST',
         body: query
     });

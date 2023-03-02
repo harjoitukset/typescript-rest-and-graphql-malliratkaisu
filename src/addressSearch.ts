@@ -1,5 +1,6 @@
-import { AddressSearchResponse } from './types/GeocodingApi';
+import { AddressSearchResponse, Feature } from './types/GeocodingApi';
 import fetch from 'node-fetch';
+import { Place } from './types/RoutingApi';
 
 /**
  * "Address search can be used to search addresses and points of interest (POIs).
@@ -15,7 +16,11 @@ import fetch from 'node-fetch';
  */
 export async function addressSearch(text: string, size: number = 1): Promise<AddressSearchResponse> {
     let encoded = encodeURIComponent(text);
-    let res = await fetch(`https://api.digitransit.fi/geocoding/v1/search?text=${encoded}&size=${size}`);
+    let res = await fetch(`https://api.digitransit.fi/geocoding/v1/search?text=${encoded}&size=${size}`, {
+        headers: {
+            'digitransit-subscription-key': process.env['DIGITRANSIT_API_KEY']!
+        }
+    });
 
     if (!res.ok) {
         throw new Error(JSON.stringify(res));
@@ -23,4 +28,28 @@ export async function addressSearch(text: string, size: number = 1): Promise<Add
 
     let data = await res.json();
     return data as AddressSearchResponse;
+}
+
+/**
+ * Searches for the given search string, and returns the best match as a Place object.
+ * If no matches are found, null is returned.
+ */
+export async function findPlace(search: string): Promise<Place | null> {
+    let result = await addressSearch(search, 1);
+    if (result.features.length > 0) {
+        return asPlace(result.features[0]);
+    }
+    return null;
+}
+
+/**
+ * Converts the "Feature" object used in Geocoding API into a "Place" object used in Routing API.
+ */
+function asPlace(feature: Feature): Place {
+    let [lon, lat] = feature.geometry.coordinates;
+    return {
+        name: feature.properties.label,
+        lat,
+        lon
+    };
 }
