@@ -1,4 +1,6 @@
 import { Place, Plan, RoutingResponse } from './types/RoutingApi';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 let formatCoord = (p: Place) => `{ lat: ${p.lat}, lon: ${p.lon} }`;
 

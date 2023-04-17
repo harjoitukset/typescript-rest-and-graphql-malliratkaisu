@@ -11,6 +11,9 @@ jobs:
   build:
     name: Autograding
     runs-on: ubuntu-latest
+    env:
+      DIGITRANSIT_API_KEY: ${{ secrets.DIGITRANSIT_API_KEY }}
     steps:
       - uses: actions/checkout@v2
+      - run: echo DIGITRANSIT_API_KEY=$DIGITRANSIT_API_KEY > .env 
       - uses: education/autograding@v1

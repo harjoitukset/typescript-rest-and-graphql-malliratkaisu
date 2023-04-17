@@ -1,6 +1,9 @@
 import { AddressSearchResponse, Feature } from './types/GeocodingApi';
 import fetch from 'node-fetch';
 import { Place } from './types/RoutingApi';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 
 /**
  * "Address search can be used to search addresses and points of interest (POIs).
